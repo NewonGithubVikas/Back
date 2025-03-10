@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const uri="mongodb://localhost:27017/Red";
-// const uri = process.env.DB_URL;
+// const uri="mongodb://localhost:27017/Red";
+const uri = process.env.DB_URL;
 const createDefaultAdmin = require("../utils/createDefaultAdmin"); 
 const staticContentSchema = new mongoose.Schema({
     title: {
