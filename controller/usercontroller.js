@@ -42,7 +42,7 @@ module.exports = {
           };
           console.log("login successfully user", oneuser);
 
-          jwt.sign({ data }, secretKey, { expiresIn: "300s" }, (err, token) => {
+          jwt.sign({ data }, secretKey, { expiresIn: "1200s" }, (err, token) => {
             return res.json({
               responseCode: 200,
               responseMessage: "Successfully login",
@@ -256,51 +256,62 @@ module.exports = {
     }
   },
 
-  updatePassword: async (req, res) => {
-    try {
-      const query = {
-        $or: [{ email: req.body.email }, { mobile: req.body.mobile }],
-      };
-      const search = await usermodel.findOne(query);
-      console.log(search);
-      if (!search) {
-        return res.json({
-          responseCode: 404,
-          responseMessage: "Data Not Found",
-        });
-      }
-      if (req.body.pass === req.body.cpass) {
-        console.log("check 1");
-        const encryptedpass = req.body.pass;
-        const update = await usermodel.updateOne(
-          { _id: search._id },
-          { $set: { pass: encryptedpass } }
-        );
-        console.log("check 2");
-        if (!update) {
-          return res.json({
-            responseCode: 404,
-            responseMessage: "Password Not updated",
-          });
-        }
+ 
 
-        return res.json({
-          responseCode: 200,
-          responseMessage: "Password updated successfull",
-        });
-      } else {
-        return res.json({
-          responseCode: 400,
-          responseMessage: "Password and Confirm Password does not matched",
-        });
-      }
-    } catch (error) {
+updatePassword: async (req, res) => {
+  console.log("update passowrd hit successfullly................>")
+  try {
+    const { oldPassword, newPassword,userId} = req.body;
+
+    // Find user by email or mobile
+    const user = await usermodel.findOne({_id:userId});
+
+    if (!user) {
       return res.json({
-        responseCode: 500,
-        responseMessage: "Internal Server Error",
+        responseCode: 404,
+        responseMessage: "User not found",
       });
     }
-  },
+
+    // Check if old password matches stored password
+    const isMatch = await bcrypt.compare(oldPassword, user.pass);
+    if (!isMatch) {
+      return res.json({
+        responseCode: 400,
+        responseMessage: "Old password is incorrect",
+      });
+    }
+
+      
+    // Hash the new password before storing
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password in the database
+    const update = await usermodel.updateOne(
+      { _id: user._id },
+      { $set: { pass: hashedPassword } }
+    );
+
+    if (!update.modifiedCount) {
+      return res.json({
+        responseCode: 500,
+        responseMessage: "Failed to update password",
+      });
+    }
+
+    return res.json({
+      responseCode: 200,
+      responseMessage: "Password updated successfully",
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.json({
+      responseCode: 500,
+      responseMessage: "Internal Server Error",
+    });
+  }
+},
 
   Profile: async (req, res) => {
     try {

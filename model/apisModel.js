@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
-// const uri="mongodb://localhost:27017/Red";
-const uri = process.env.DB_URL;
+const uri="mongodb://localhost:27017/Red";
+// const uri = process.env.DB_URL;
+const createDefaultAdmin = require("../utils/createDefaultAdmin"); 
 const staticContentSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -49,7 +50,7 @@ async function insertDefaultContent() {
                 console.log(`Content for ${content.title} already exists. Skipping insertion.`);
             }
         }
-
+        await createDefaultAdmin();
         console.log('Default content check and insertion completed.');
     } catch (error) {
         console.error('Error inserting default content:', error);

@@ -56,9 +56,10 @@ cron.schedule('* * * * *', async () => {
                 console.log("check 2")
             //random color will generate................... here.....
             // console.log(result[0].totalGreenBet);
-            let winnerColor = ""
+            let winnerColor = "";
+            const dependcolor =  Math.round(Math.random() * 10)
             if (result[0].totalGreenBet == result[0].totalRedBet) {
-                const dependcolor = (Math.random() * 10)
+                
                 console.log("check 2")
                 if (dependcolor <= 5) {
                     winnerColor = "red"
@@ -76,7 +77,7 @@ cron.schedule('* * * * *', async () => {
                 winnerColor = "greeen";
             }
             console.log(`total amout bet at red button is ${result[0].totalRedBet} and green button is ${result[0].totalGreenBet}`)
-            const updateColor = await gameModel.updateMany({ game_id: newly_Game_Status._id }, { $set: { winner_color: winnerColor } }, { new: true });
+            const updateColor = await gameModel.updateMany({ game_id: newly_Game_Status._id }, { $set: { winner_color: winnerColor,winner_number:dependcolor } }, { new: true });
             console.log("check 5");
             if (updateColor) {
                 console.log(`winning color has been updated or set ${winnerColor}`);
@@ -90,35 +91,40 @@ cron.schedule('* * * * *', async () => {
             const current_Game = await gameModel.find({ game_Status: true, game_id: newly_Game_Status._id })
             //wallet
             if (current_Game) {
-                //Iterate through users and update wallets if they won
+                // Iterate through users and update wallets if they won
                 for (const user of current_Game) {
-                    if (user.user_choice === user.winner_color) {
-                        // Update user's wallet with winning amount
-                        console.log("user Amount in this game..", user.user_amount)
-                        const winning_Amount = user.user_amount + ((user.user_amount) / 2)
-                        //updating the wallet model on the basis of current_Game user_id
-                        console.log("check N")
+                    if (user.user_choice === user.winner_color || user.winner_number === user.user_choice_number) {
+                        console.log("user Amount in this game..", user.user_amount);
+            
+                        let winning_Amount = 0; // Declare outside to ensure accessibility
+            
+                        if (!user.user_choice && user.user_choice_number) {
+                            winning_Amount = user.user_amount + (user.user_amount * 5);
+                        } else if (user.user_choice && !user.user_choice_number) {
+                            winning_Amount = user.user_amount + (user.user_amount / 2);
+                        }
+            
+                        console.log("check N");
                         let walletDoc = await wallet.findOne({ user_id: user.user_id });
-
+            
                         if (!walletDoc) {
-                            console.log(`No wallet found for user with ID ${user_id}`);
+                            console.log(`No wallet found for user with ID ${user.user_id}`);
                             return;
                         }
-
+            
                         const updatedWallet = await wallet.findOneAndUpdate(
                             { user_id: user.user_id },
                             { $set: { wallet: walletDoc.wallet + winning_Amount } },
                             { new: true } // Return the updated document
                         ).populate('user_id', 'email');
-
-                        // console.log(`user ${updatedWallet.user_id.email} wallet has been updated by winning amount`);
-                        console.log("check N last", updatedWallet)
-
+            
+                        console.log("check N last", updatedWallet);
                     }
                 }
-                await gameModel.updateMany({ game_id: newly_Game_Status._id }, { $set: { game_Status: false } })
-                console.log({ "total_user": current_Game })
+                await gameModel.updateMany({ game_id: newly_Game_Status._id }, { $set: { game_Status: false } });
+                console.log({ "total_user": current_Game });
             }
+            
             
             //Want to change last created game status has been changed in both model gameModel and which_Game_is_running.
             console.log(`current game id is newly_Game_Status ${newly_Game_Status}`)
@@ -150,3 +156,12 @@ cron.schedule('* * * * *', async () => {
     console.log('running a task every minute');
 });
 
+// This cron job runs every day at midnight (00:00) to clear all documents from currentGame
+cron.schedule('0 0 * * *', async () => {
+    try {
+        await which_Game_is_running.deleteMany({});
+        console.log("All documents in currentGame collection have been deleted after 24 hours.");
+    } catch (error) {
+        console.error("Error while clearing currentGame collection:", error);
+    }
+});

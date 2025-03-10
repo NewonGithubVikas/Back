@@ -77,7 +77,93 @@ module.exports = {
             });
         }
     },
-
+    Numberbet: async (req, res) => {
+        // Parameter required for using this API from the frontend as - user_id, user_number, and user_amount
+        console.log("Value from frontend: ", req.body);
+        try {
+            // Ensure user_choice is in lowercase and user_amount is numeric
+            req.body.user_amount = parseFloat(req.body.user_amount);
+    
+            // Validate user_number is between 1-9
+            if (!req.body.user_number || req.body.user_number < 1 || req.body.user_number > 9) {
+                return res.json({
+                    responseCode: 400,
+                    responseMessage: "Select a valid number between 1 and 9",
+                });
+            }
+    
+            const user = await userWallet.findOne({ user_id: req.body.user_id });
+    
+            if (!user) {
+                return res.json({
+                    responseCode: 200,
+                    responseMessage: "User does not exist",
+                });
+            }
+    
+            if (req.body.user_amount < 1) {
+                return res.json({
+                    responseCode: 200,
+                    responseMessage: "Amount should be greater than 0",
+                });
+            }
+    
+            // Check if the user's wallet balance is sufficient
+            if (user.wallet < req.body.user_amount) {
+                return res.json({
+                    responseCode: 400,
+                    responseMessage: "Insufficient balance in wallet",
+                });
+            }
+    
+            const current_Game_id = await which_Game_is_running
+                .findOne({ game_Status: true })
+                .sort({ created_At: -1 })
+                .exec();
+    
+            if (!current_Game_id) {
+                return res.json({
+                    responseCode: 400,
+                    responseMessage: "No active game found",
+                });
+            }
+    
+            req.body.game_id = current_Game_id._id;
+            req.body.green_bet = 0;
+            req.body.red_bet = 0;
+            req.body.user_choice_number= req.body.user_number;
+            console.log("Check 1====================>");
+            const status = await gameModel.create(req.body);
+    
+            console.log("Check 2");
+            if (!status) {
+                return res.json({
+                    responseCode: 400,
+                    responseMessage: "Try another bet",
+                });
+            }
+    
+            // Deduct amount from user's wallet
+            await userWallet.findByIdAndUpdate(
+                { _id: user._id },
+                { $set: { wallet: user.wallet - req.body.user_amount } }
+            );
+    
+            return res.json({
+                responseCode: 200,
+                responseMessage: "Bet placed successfully",
+                amount: req.body.user_amount,
+                user_number: req.body.user_number,
+            });
+        } catch (error) {
+            console.error("Error in bet API: ", error);
+            return res.json({
+                responseCode: 500,
+                responseMessage: "Internal Server Error",
+            });
+        }
+    }
+    ,
     bet: async (req, res) => {
         // Parameter required for using this API from the frontend as - user_id, user_choice, and user_amount
         console.log("Value from frontend: ", req.body);
@@ -176,7 +262,9 @@ module.exports = {
                     $group: {
                         _id: "$game_id",
                         totalAmount: { $sum: "$user_amount" },
-                        winnerColor: { $first: "$winner_color" }, // Assuming winner_color is stored in each record
+                        winnerColor: { $first: "$winner_color" }, // Get winner color
+                        winnerNumber: { $first: "$winner_number" }, // Get winner number
+                        createdAt: { $first: "$created_At" } // Ensure sorting works correctly
                     },
                 },
                 // Project the results into a cleaner format
@@ -186,8 +274,12 @@ module.exports = {
                         _id: 0,
                         totalAmount: 1,
                         winnerColor: 1,
+                        winnerNumber: 1,
+                        createdAt: 1, // Keep createdAt for sorting
                     },
                 },
+                // Sort by createdAt in descending order (latest games first)
+                { $sort: { createdAt: -1 } }
             ]);
     
             if (!result || result.length === 0) {
@@ -210,5 +302,6 @@ module.exports = {
             });
         }
     },
+    
     
     };

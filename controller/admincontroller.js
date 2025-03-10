@@ -9,13 +9,14 @@ const secretKey = "secretkey";
 module.exports = {
 
     login: async (req, res) => {
+      console.log("admin login api hit successfully................");
         try {
-            const { email, password } = req.body
+            const { mobile, password } = req.body
 
-            if (!email || !password) {
+            if (!mobile || !password) {
                 return res.json({responseCode:400,responseMessage: "Email and Password are required" })
             }
-            const foundUser = await users.findOne({ $and: [{ email: email }, { userType: "ADMIN" }] })
+            const foundUser = await users.findOne({ $and: [{ mobile: mobile }, { userType: "ADMIN" }] })
           
             if (!foundUser) {
                 return res.json({responseCode:401,responseMessage: "User not found" })
@@ -37,7 +38,7 @@ module.exports = {
               };
               console.log("login successfully user", foundUser);
     
-              jwt.sign({ data }, secretKey, { expiresIn: "300s" }, (err, token) => {
+              jwt.sign({ data }, secretKey, { expiresIn: "1200s" }, (err, token) => {
                 return res.json({
                   responseCode: 200,
                   responseMessage: "Successfully login",

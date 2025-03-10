@@ -10,7 +10,7 @@ const  gameSchema=mongoose.Schema({
     },
     user_choice:{
         type:String,
-        enum:['red','green'],
+        enum:['red','green','number'],
         // required:true
     }
     ,
@@ -26,7 +26,17 @@ const  gameSchema=mongoose.Schema({
     },
     winner_color:{
         type:String,
-        enum:["red","green"],
+        enum : ["red","green"],
+        default:null
+    },
+    user_choice_number:{
+        type:Number,
+        enum : [1,2,3,4,5,6,7,8,9],
+        default:null
+    },
+    winner_number:{
+        type:Number,
+        enum : [1,2,3,4,5,6,7,8,9],
         default:null
     },
     created_At: {

@@ -1,5 +1,5 @@
 const express = require('express');
-const middleWareToken=require('../middleware/userAuth')
+const userAuth=require('../middleware/userAuth')
 const adminController = require('../controller/admincontroller');
 const adminRoutes = express.Router();
 
@@ -9,26 +9,26 @@ adminRoutes.post('/signin', adminController.login)
 
 // admin functionality routes
 
-adminRoutes.get('/allUsers', middleWareToken.verifyToken, adminController.getAllUser)
+adminRoutes.get('/allUsers', userAuth.verifyToken, adminController.getAllUser)
 
-adminRoutes.put('/login/:id/status', middleWareToken.verifyToken, adminController.changeUserStatus)
+adminRoutes.put('/login/:id/status', userAuth.verifyToken, adminController.changeUserStatus)
 
-adminRoutes.get('/users/:id', middleWareToken.verifyToken, adminController.getUserById)
+adminRoutes.get('/users/:id', userAuth.verifyToken, adminController.getUserById)
 
-adminRoutes.post('/create/user', middleWareToken.verifyToken, adminController.createUser)
+adminRoutes.post('/create/user', userAuth.verifyToken, adminController.createUser)
 
-adminRoutes.get('/getAdmin', middleWareToken.verifyToken, adminController.getAdmin)
+adminRoutes.get('/getAdmin', userAuth.verifyToken, adminController.getAdmin)
 
 // here user request (add,withdraw) api will manage by admin
-adminRoutes.get('/check-add-request',adminController.watchAddRequest);
-adminRoutes.get('/check-withdraw-request',adminController.watchWithdrawRequest);
-adminRoutes.post('/status-withdraw-change',adminController.changeWithdrawStatus);
-adminRoutes.get('/dashboard-stats',adminController.Dashboard);
+adminRoutes.get('/check-add-request',userAuth.verifyToken,adminController.watchAddRequest);
+adminRoutes.get('/check-withdraw-request',userAuth.verifyToken,adminController.watchWithdrawRequest);
+adminRoutes.post('/status-withdraw-change',userAuth.verifyToken,adminController.changeWithdrawStatus);
+adminRoutes.get('/dashboard-stats',userAuth.verifyToken,adminController.Dashboard);
 //Admin wallet handller router written here as admin can add & withdraw money from the user account but
 //  history will 
 //not show
-adminRoutes.post('/admin-addbalance',adminController.add);
+adminRoutes.post('/admin-addbalance',userAuth.verifyToken,adminController.add);
 
-adminRoutes.post('/admin-withdraw-balance',adminController.withdrawBalance);
+adminRoutes.post('/admin-withdraw-balance',userAuth.verifyToken,adminController.withdrawBalance);
 
 module.exports=adminRoutes;

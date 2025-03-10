@@ -6,14 +6,14 @@ const secretKey = "secretkey";
 async function verification(token) {
     return new Promise((resolve, reject) => {
         jwt.verify(token, secretKey, (err, authData) => {
-            console.log("token value",token)
+            // console.log("token value",token)
             if (err) {
                 console.log("Token verification failed:", err);
                 return resolve(0);
             }
             if (authData && authData.data && authData.data.id) {
                 console.log("here is checked the condition")
-                console.log(authData)
+                // console.log(authData)
                 return resolve(authData);
             } else {
                 console.log("Invalid token structure");
@@ -25,6 +25,7 @@ async function verification(token) {
 
 module.exports = {
     verifyToken: async (req, res, next) => {
+        console.log("userAuth middleware hit successfully")
         const bearerHeader = req.headers['authorization'];
         if (typeof bearerHeader !== 'undefined') {
             console.log("Token is provided...");
@@ -35,14 +36,14 @@ module.exports = {
             try {
                 const userId = await verification(token);
                 if (userId === 0) {
-                    return res.status(403).json({
-                        responseCode: 403,
+                    return res.status(401).json({
+                        responseCode: 401,
                         responseMessage: "Invalid token",
                     });
                 }
                 req.user = userId; 
                 
-                console.log(userId)
+                // console.log(userId)
                 next();
             } catch (error) {
                 console.error("Token verification error:", error);
