@@ -119,7 +119,7 @@ module.exports = {
     } catch (error) {
       return res.status(500).json({
         responseCode: 500,
-        responseMessage: "Something went wrong",
+        responseMessage: "Something went wrong from the signup route",
         responseResult: error,
       });
     }
