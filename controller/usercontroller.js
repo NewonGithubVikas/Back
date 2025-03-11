@@ -65,65 +65,104 @@ module.exports = {
       });
     }
   },
-  SignUp: async (req, res) => {
+    SignUp: async (req, res) => {
     try {
-      console.log("requested value ",req.body);
+      console.log("Incoming request body:", req.body);
   
+      // Assign default email if not provided
+      if (!req.body.email) {
+        req.body.email = `user_${Date.now()}@example.com`;
+        console.log("No email provided. Assigned default email:", req.body.email);
+      }
+  
+      // Check if the email already exists (to avoid duplicate email errors)
+      const existingEmail = await usermodel.findOne({ email: req.body.email });
+      if (existingEmail) {
+        return res.status(400).json({
+          responseCode: 400,
+          responseMessage: "Email already exists",
+        });
+      }
+  
+      // Check if mobile number is already registered
       const query = {
-        $and: [
-          {  mobile: req.body.mobile },
-          { statusCode: { $ne: "DELETE" } },
-        ],
+        $and: [{ mobile: req.body.mobile }, { statusCode: { $ne: "DELETE" } }],
       };
   
-      const model = await usermodel.findOne(query);
+      const existingUser = await usermodel.findOne(query);
+      if (existingUser) {
+        console.log("User already exists with mobile:", req.body.mobile);
+        return res.json({
+          responseCode: 404,
+          responseMessage: "Mobile number already exists",
+        });
+      }
   
-      if (model) {
-         if (req.body.mobile == model.mobile) {
-          return res.json({
-            responseCode: 404,
-            responseMessage: "Mobile number already exists",
-          });
-        }
+      // Generate OTP and hash password
+      req.body.otp = otpgeneration.otpgeneration();
+      req.body.otpTime = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+  
+      console.log("Generated OTP:", req.body.otp);
+  
+      // Ensure password is provided before hashing
+      if (!req.body.pass) {
+        console.error("Error: Password is missing in request body.");
+        return res.status(400).json({
+          responseCode: 400,
+          responseMessage: "Password is required",
+        });
+      }
+  
+      req.body.pass = bcrypt.hashSync(req.body.pass, 10);
+      console.log("Hashed password:", req.body.pass);
+  
+      console.log("Final req.body before saving:", req.body);
+  
+      // Create new user
+      const saveUser = await usermodel.create(req.body).catch((err) => {
+        console.error("Error saving user:", err);
+        return null;
+      });
+  
+      if (!saveUser) {
+        return res.status(500).json({
+          responseCode: 500,
+          responseMessage: "User registration failed",
+        });
+      }
+  
+      console.log("User saved successfully:", saveUser);
+  
+      // Create wallet for the user
+      const walletBalance = await walletModel
+        .create({ user_id: saveUser._id })
+        .catch((err) => {
+          console.error("Wallet creation error:", err);
+          return null;
+        });
+  
+      if (!walletBalance) {
+        console.log("Warning: Wallet creation failed for user:", saveUser._id);
       } else {
-        // Generate OTP and hash password
-        console.log("here is code fine 2");
-        req.body.otp = otpgeneration.otpgeneration();
-        
-        req.body.otpTime = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
-        console.log("here is code fine");
-        req.body.pass = bcrypt.hashSync(req.body.password, 10);
-        console.log("here is code fine ===================>",req.body.pass);
-        // Send OTP mail
-        // domail(req.body.email, "Otp verification", `Your otp is ${req.body.otp}`);
-          console.log("value for the save variable ",req.body);
-        const save = await usermodel.create(req.body);
-        console.log("value for the save variable ",save);
-        if(!save){
-          return res.status(500).json({
-            responseCode: 500,
-            responseMessage: "Internal server Error",
-            responseResult: "error",
-          });
-        }
-          //wallet default id set ........
-        const walletbalance=await walletModel.create({user_id:save._id});
-        console.log("walletBalance created of not check",walletbalance);
-          return res.status(200).json({
-            responseCode: 200,
-            responseMessage: "Signup successfully",
-            responseResult: save,
-            wallet:walletbalance
-          });
-        }
+        console.log("Wallet created successfully:", walletBalance);
+      }
+  
+      return res.status(200).json({
+        responseCode: 200,
+        responseMessage: "Signup successful",
+        responseResult: saveUser,
+        wallet: walletBalance,
+      });
     } catch (error) {
+      console.error("Unexpected error in signup:", error);
       return res.status(500).json({
         responseCode: 500,
-        responseMessage: "Something went wrong from the signup route",
-        responseResult: error,
+        responseMessage: "Something went wrong",
+        responseResult: error.message,
       });
     }
-  },
+  }
+,
   
   otpVarify: async (req, res) => {
     console.log("hellow worl");
