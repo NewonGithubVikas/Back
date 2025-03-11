@@ -67,7 +67,7 @@ module.exports = {
   },
   SignUp: async (req, res) => {
     try {
-      console.log(req.body);
+      console.log("requested value ",req.body);
   
       const query = {
         $and: [
