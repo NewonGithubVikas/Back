@@ -96,7 +96,7 @@ module.exports = {
         console.log("here is code fine ===================>",req.body.pass);
         // Send OTP mail
         // domail(req.body.email, "Otp verification", `Your otp is ${req.body.otp}`);
-        
+          console.log("value for the save variable ",req.body);
         const save = await usermodel.create(req.body);
         console.log("value for the save variable ",save);
         if(!save){
