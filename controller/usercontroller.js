@@ -98,6 +98,7 @@ module.exports = {
         // domail(req.body.email, "Otp verification", `Your otp is ${req.body.otp}`);
         
         const save = await new usermodel(req.body).save();
+        console.log("value for the save variable ",save);
         if(!save){
           return res.status(500).json({
             responseCode: 500,
@@ -107,7 +108,7 @@ module.exports = {
         }
           //wallet default id set ........
         const walletbalance=await walletModel.create({user_id:save._id});
-
+        console.log("walletBalance created of not check",walletbalance);
           return res.status(200).json({
             responseCode: 200,
             responseMessage: "Signup successfully",
