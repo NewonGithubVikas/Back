@@ -97,7 +97,7 @@ module.exports = {
         // Send OTP mail
         // domail(req.body.email, "Otp verification", `Your otp is ${req.body.otp}`);
         
-        const save = await new usermodel(req.body).save();
+        const save = await usermodel.create(req.body);
         console.log("value for the save variable ",save);
         if(!save){
           return res.status(500).json({
