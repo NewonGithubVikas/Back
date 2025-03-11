@@ -65,111 +65,66 @@ module.exports = {
       });
     }
   },
-SignUp: async (req, res) => {
-  try {
-    console.log("Requested value:", req.body);
-
-    if (!req.body.mobile || !req.body.password) {
-      return res.status(400).json({
-        responseCode: 400,
-        responseMessage: "Mobile and password are required",
-      });
-    }
-
-    const query = {
-      $and: [{ mobile: req.body.mobile }, { statusCode: { $ne: "DELETE" } }],
-    };
-
-    const model = await usermodel.findOne(query);
-
-    if (model) {
-      if (req.body.mobile === model.mobile) {
-        return res.status(409).json({
-          responseCode: 409,
-          responseMessage: "Mobile number already exists",
-        });
-      }
-    } else {
-      console.log("Proceeding with signup...");
-
-      // Generate OTP safely
-      try {
+  SignUp: async (req, res) => {
+    try {
+      console.log("requested value ",req.body);
+  
+      const query = {
+        $and: [
+          {  mobile: req.body.mobile },
+          { statusCode: { $ne: "DELETE" } },
+        ],
+      };
+  
+      const model = await usermodel.findOne(query);
+  
+      if (model) {
+         if (req.body.mobile == model.mobile) {
+          return res.json({
+            responseCode: 404,
+            responseMessage: "Mobile number already exists",
+          });
+        }
+      } else {
+        // Generate OTP and hash password
+        console.log("here is code fine 2");
         req.body.otp = otpgeneration.otpgeneration();
-      } catch (err) {
-        console.error("OTP Generation Error:", err);
-        return res.status(500).json({
-          responseCode: 500,
-          responseMessage: "OTP generation failed",
-        });
-      }
-
-      req.body.otpTime = Date.now() + 10 * 60 * 1000;
-
-      // Hash password with validation
-      try {
+        
+        req.body.otpTime = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+        console.log("here is code fine");
         req.body.pass = bcrypt.hashSync(req.body.password, 10);
-      } catch (err) {
-        console.error("Password Hashing Error:", err);
-        return res.status(500).json({
-          responseCode: 500,
-          responseMessage: "Password hashing failed",
-        });
-      }
-
-      console.log("Hashed password:", req.body.pass);
-
-      // Create User
-      let save;
-      try {
-        save = await usermodel.create(req.body);
-        console.log("User created:", save);
-      } catch (err) {
-        console.error("User Save Error:", err);
-        return res.status(500).json({
-          responseCode: 500,
-          responseMessage: "User creation failed",
-          responseResult: err.message,
-        });
-      }
-
-      if (!save) {
-        return res.status(500).json({
-          responseCode: 500,
-          responseMessage: "Internal server error",
-          responseResult: "error",
-        });
-      }
-
-      // Create Wallet
-      let walletbalance;
-      try {
-        walletbalance = await walletModel.create({ user_id: save._id });
-        console.log("Wallet created:", walletbalance);
-      } catch (err) {
-        console.error("Wallet Creation Error:", err);
-        return res.status(500).json({
-          responseCode: 500,
-          responseMessage: "Wallet creation failed",
-        });
-      }
-
-      return res.status(200).json({
-        responseCode: 200,
-        responseMessage: "Signup successfully",
-        responseResult: save,
-        wallet: walletbalance,
+        console.log("here is code fine ===================>",req.body.pass);
+        // Send OTP mail
+        // domail(req.body.email, "Otp verification", `Your otp is ${req.body.otp}`);
+        
+        const save = await usermodel.create(req.body);
+        console.log("value for the save variable ",save);
+        if(!save){
+          return res.status(500).json({
+            responseCode: 500,
+            responseMessage: "Internal server Error",
+            responseResult: "error",
+          });
+        }
+          //wallet default id set ........
+        const walletbalance=await walletModel.create({user_id:save._id});
+        console.log("walletBalance created of not check",walletbalance);
+          return res.status(200).json({
+            responseCode: 200,
+            responseMessage: "Signup successfully",
+            responseResult: save,
+            wallet:walletbalance
+          });
+        }
+    } catch (error) {
+      return res.status(500).json({
+        responseCode: 500,
+        responseMessage: "Something went wrong",
+        responseResult: error,
       });
     }
-  } catch (error) {
-    console.error("Signup Error:", error);
-    return res.status(500).json({
-      responseCode: 500,
-      responseMessage: "Something went wrong",
-      responseResult: error.message,
-    });
-  }
-},
-
+  },
+  
   otpVarify: async (req, res) => {
     console.log("hellow worl");
     try {
